@@ -1,0 +1,7 @@
+{
+  "name": "DSA Notes Desktop",
+  "description": "A local, offline Data Structures and Algorithms question tracker and study organizer with SQLite persistence and syntax-highlighted code notes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
