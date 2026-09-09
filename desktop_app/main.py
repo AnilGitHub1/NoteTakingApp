@@ -49,7 +49,7 @@ except ImportError:
 from database import (
     init_db, seed_sample_data, add_question, update_question,
     delete_question, get_question, get_all_questions, get_all_topics,
-    get_stats, save_local_asset, DEFAULT_DB_PATH, DEFAULT_ASSETS_DIR
+    get_stats, save_local_asset, resolve_asset_path, DEFAULT_DB_PATH, DEFAULT_ASSETS_DIR
 )
 from highlighter import DSACodeHighlighter
 from theme import DARK_STYLESHEET
@@ -656,17 +656,17 @@ class MainWindow(QMainWindow):
         self.detail_code_viewer.setPlainText(q["code"] or "")
 
         # Local image rendering
-        img_path = q["image_path"]
+        img_path = resolve_asset_path(q["image_path"])
         if img_path and os.path.exists(img_path):
             self.image_container.setVisible(True)
             pixmap = QPixmap(img_path)
             if not pixmap.isNull():
                 scaled = pixmap.scaled(600, 360, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 self.detail_image_label.setPixmap(scaled)
-                self.detail_image_path_label.setText(f"File: {img_path}")
+                self.detail_image_path_label.setText(f"File: {os.path.basename(img_path)}")
             else:
                 self.detail_image_label.setText("Unable to load image preview.")
-                self.detail_image_path_label.setText(img_path)
+                self.detail_image_path_label.setText(os.path.basename(img_path))
         else:
             self.image_container.setVisible(False)
 
@@ -736,11 +736,12 @@ class MainWindow(QMainWindow):
         # Image
         self.attached_image_source_path = None
         self.existing_relative_image_path = q["image_path"]
+        resolved_img = resolve_asset_path(q["image_path"])
 
-        if q["image_path"] and os.path.exists(q["image_path"]):
-            self.form_image_path_label.setText(f"Attached: {q['image_path']}")
+        if resolved_img and os.path.exists(resolved_img):
+            self.form_image_path_label.setText(f"Attached: {os.path.basename(resolved_img)}")
             self.btn_remove_img.setVisible(True)
-            pix = QPixmap(q["image_path"])
+            pix = QPixmap(resolved_img)
             if not pix.isNull():
                 self.form_image_preview.setPixmap(pix.scaled(300, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
                 self.form_image_preview.setVisible(True)

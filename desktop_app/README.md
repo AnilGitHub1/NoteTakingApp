@@ -48,6 +48,41 @@ python main.py
 
 ---
 
+## 🍏 Building a macOS `.app` Desktop Bundle
+
+You can package this project into a native **`DSANoteTaker.app`** bundle that you can put in `/Applications` or launch from Launchpad and Dock:
+
+### Option A: Using the Automated Build Script (Quickest)
+```bash
+cd desktop_app
+chmod +x build_mac.sh
+./build_mac.sh
+```
+
+### Option B: Manual Build via PyInstaller
+```bash
+cd desktop_app
+pip install pyinstaller PyQt6
+pyinstaller --clean DSANoteTaker.spec
+```
+
+The compiled application bundle will be generated at:
+```
+desktop_app/dist/DSANoteTaker.app
+```
+
+### Launch and Install
+- To launch immediately:
+  ```bash
+  open dist/DSANoteTaker.app
+  ```
+- To install in your Mac's Applications folder:
+  ```bash
+  cp -r dist/DSANoteTaker.app /Applications/
+  ```
+
+---
+
 ## Project Structure
 ```text
 desktop_app/

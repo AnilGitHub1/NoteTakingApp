@@ -263,4 +263,4 @@ QScrollBar::handle:horizontal {
     min-width: 24px;
     border-radius: 4px;
 }
-""""""
+"""

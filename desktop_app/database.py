@@ -7,11 +7,48 @@ import os
 import shutil
 import sqlite3
 import uuid
+import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 
-DEFAULT_DB_PATH = "dsa_notes.db"
-DEFAULT_ASSETS_DIR = "dsa_assets"
+def get_app_dir() -> str:
+    """
+    Returns a safe, persistent user-data directory across macOS, Windows, and Linux.
+    When packaged as a macOS .app or frozen binary, stores data in ~/Library/Application Support/DSANoteTaker
+    to prevent permission errors when placed in /Applications.
+    """
+    if getattr(sys, "frozen", False):
+        if sys.platform == "darwin":
+            base = os.path.expanduser("~/Library/Application Support/DSANoteTaker")
+        elif sys.platform == "win32":
+            base = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "DSANoteTaker")
+        else:
+            base = os.path.expanduser("~/.local/share/DSANoteTaker")
+        os.makedirs(base, exist_ok=True)
+        return base
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+DEFAULT_DB_PATH = os.path.join(get_app_dir(), "dsa_notes.db")
+DEFAULT_ASSETS_DIR = os.path.join(get_app_dir(), "dsa_assets")
+
+
+def resolve_asset_path(img_path: Optional[str]) -> Optional[str]:
+    """Resolves relative or absolute image asset paths safely across working directories."""
+    if not img_path:
+        return None
+    if os.path.isabs(img_path) and os.path.exists(img_path):
+        return img_path
+    candidate_assets = os.path.join(DEFAULT_ASSETS_DIR, os.path.basename(img_path))
+    if os.path.exists(candidate_assets):
+        return candidate_assets
+    candidate_app = os.path.join(get_app_dir(), img_path)
+    if os.path.exists(candidate_app):
+        return candidate_app
+    if os.path.exists(img_path):
+        return os.path.abspath(img_path)
+    return None
+
 
 
 def get_db_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
@@ -162,10 +199,10 @@ def delete_question(question_id: int, db_path: str = DEFAULT_DB_PATH) -> bool:
         cursor.execute("SELECT image_path FROM questions WHERE id = ?", (question_id,))
         row = cursor.fetchone()
         if row and row["image_path"]:
-            img = row["image_path"]
-            if os.path.exists(img) and "dsa_assets" in img:
+            resolved_img = resolve_asset_path(row["image_path"])
+            if resolved_img and os.path.exists(resolved_img) and "dsa_assets" in resolved_img:
                 try:
-                    os.remove(img)
+                    os.remove(resolved_img)
                 except OSError:
                     pass
 
