@@ -193,7 +193,7 @@ export default function App() {
             <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
           </div>
           <span className="text-[#a1a1aa] font-medium tracking-tight">
-            DSA Ledger <span className="text-[#52525b]">•</span> <span className="text-[#71717a]">Local Study Suite (PyQt6 & SQLite)</span>
+            DSA Notes
           </span>
         </div>
 
@@ -293,15 +293,11 @@ export default function App() {
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            100% Offline (SQLite: dsa_notes.db)
+            Ready
           </span>
-          <span className="text-[#3f3f46]">|</span>
-          <span>Assets: ./dsa_assets/</span>
         </div>
         <div className="flex items-center gap-3">
           <span>{filteredQuestions.length} of {questions.length} questions visible</span>
-          <span className="text-[#3f3f46]">|</span>
-          <span>v1.0.4 Local Mode Only</span>
         </div>
       </footer>
     </div>

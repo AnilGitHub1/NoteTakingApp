@@ -44,11 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight text-white leading-tight">
-                DSA Ledger
+                DSA Notes
               </h1>
-              <p className="text-[11px] text-[#52525b] font-mono">
-                Desktop Study Suite (PyQt6)
-              </p>
             </div>
           </div>
         </div>
@@ -205,20 +202,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Section: 100% Offline Status Pill */}
-      <div className="p-4 border-t border-[#27272a] text-[11px] text-[#52525b] bg-[#121212]">
-        <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium mb-1">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>Local SQLite Mode</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-[#71717a]">
-          <HardDrive className="w-3 h-3 text-[#52525b] shrink-0" />
-          <span className="truncate">dsa_notes.db</span>
-        </div>
-        <div className="text-[10px] text-[#52525b] font-mono mt-0.5">
-          Assets: ./dsa_assets/
-        </div>
-      </div>
     </aside>
   );
 };

@@ -322,7 +322,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
                   Picture / Diagram Attachment
                 </h4>
                 <p className="text-[11px] text-[#71717a] mt-0.5">
-                  Local Asset Storage: files are stored inside <span className="font-mono text-[#a1a1aa]">./dsa_assets/</span>
+                  Attach an image or diagram to illustrate the solution.
                 </p>
               </div>
 
@@ -357,9 +357,9 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
                   />
                   <div>
                     <p className="text-xs font-medium text-[#e4e4e7] truncate max-w-xs font-mono">
-                      {imageFileName || './dsa_assets/attached_diagram.png'}
+                      {imageFileName ? imageFileName.replace('dsa_assets/', '') : 'attached_diagram.png'}
                     </p>
-                    <span className="text-[10px] text-emerald-400">Ready to save in ./dsa_assets/</span>
+                    <span className="text-[10px] text-emerald-400">Image attached successfully</span>
                   </div>
                 </div>
 
@@ -390,7 +390,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
               className="flex items-center gap-2 px-5 py-1.5 rounded text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all"
             >
               <Save className="w-4 h-4" />
-              Save to SQLite
+              Save Question
             </button>
           </div>
         </form>

@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"DSA Notes — Local Study Suite ({QT_FRAMEWORK})")
+        self.setWindowTitle("DSA Notes")
         self.resize(1280, 840)
         self.setMinimumSize(980, 640)
 
@@ -107,8 +107,8 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(self.stack, 1)
 
-        # Status Bar
-        self.statusBar().showMessage(f"Ready • Local SQLite Database: {DEFAULT_DB_PATH} • Assets: ./{DEFAULT_ASSETS_DIR}/")
+        # Status Bar (Hidden to remove extra technical details)
+        self.statusBar().hide()
 
     # =========================================================================
     # SIDEBAR NAVIGATION COMPONENT
@@ -131,10 +131,7 @@ class MainWindow(QMainWindow):
         brand_layout.addWidget(brand_title)
         brand_layout.addStretch()
         layout.addLayout(brand_layout)
-
-        subtitle = QLabel("Local Algorithm Journal")
-        subtitle.setStyleSheet("color: #71717a; font-size: 11px; margin-bottom: 8px;")
-        layout.addWidget(subtitle)
+        layout.addSpacing(10)
 
         # Primary Navigation Buttons
         self.btn_nav_all = QPushButton("📂  All Questions")
@@ -142,7 +139,7 @@ class MainWindow(QMainWindow):
         self.btn_nav_all.clicked.connect(lambda: self.switch_view(0))
         layout.addWidget(self.btn_nav_all)
 
-        self.btn_nav_topics = QPushButton("🏷️  Categories & Topics")
+        self.btn_nav_topics = QPushButton("🏷️  Categories && Topics")
         self.btn_nav_topics.setProperty("class", "nav-btn")
         self.btn_nav_topics.clicked.connect(lambda: self.switch_view(2))
         layout.addWidget(self.btn_nav_topics)
@@ -180,20 +177,6 @@ class MainWindow(QMainWindow):
         self.btn_diff_all.setChecked(True)
 
         layout.addStretch()
-
-        # Offline Storage Status Card at bottom of sidebar
-        storage_card = QFrame()
-        storage_card.setStyleSheet("background-color: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 8px;")
-        storage_layout = QVBoxLayout(storage_card)
-        storage_layout.setContentsMargins(8, 8, 8, 8)
-        storage_layout.setSpacing(4)
-        status_label = QLabel("🛡️ 100% Offline & Local")
-        status_label.setStyleSheet("color: #4ade80; font-size: 11px; font-weight: 600;")
-        path_label = QLabel(f"DB: sqlite3\nStorage: ./{DEFAULT_ASSETS_DIR}/")
-        path_label.setStyleSheet("color: #71717a; font-size: 10px;")
-        storage_layout.addWidget(status_label)
-        storage_layout.addWidget(path_label)
-        layout.addWidget(storage_card)
 
         return sidebar
 
@@ -464,7 +447,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.input_code)
 
         # Row 7: Picture / Image Attachment
-        layout.addWidget(QLabel("Picture / Diagram Attachment (Local Asset Copy)"))
+        layout.addWidget(QLabel("Picture / Diagram Attachment"))
         img_picker_box = QFrame()
         img_picker_box.setStyleSheet("background-color: #18181b; border: 1px dashed #3f3f46; border-radius: 8px; padding: 12px;")
         img_picker_layout = QVBoxLayout(img_picker_box)
@@ -623,7 +606,8 @@ class MainWindow(QMainWindow):
 
             # Add to QListWidget
             list_item = QListWidgetItem()
-            list_item.setSizeHint(item_widget.sizeHint())
+            # Set explicit size hint so layout does not clip and displays perfectly on all resolutions
+            list_item.setSizeHint(QSize(0, 72))
             list_item.setData(Qt.ItemDataRole.UserRole, q["id"])
 
             self.question_list_widget.addItem(list_item)
@@ -895,16 +879,16 @@ class MainWindow(QMainWindow):
             item_layout = QHBoxLayout(item_widget)
             item_layout.setContentsMargins(16, 12, 16, 12)
 
-            name_lbl = QLabel(f"📁 {topic_name}")
-            name_lbl.setStyleSheet("font-size: 15px; font-weight: 700; color: #f4f4f5;")
+            name_lbl = QLabel(f"📁  {topic_name}")
+            name_lbl.setStyleSheet("font-size: 14px; font-weight: 700; color: #ffffff;")
             item_layout.addWidget(name_lbl, 1)
 
             count_pill = QLabel(f"{count} {'question' if count == 1 else 'questions'}")
-            count_pill.setStyleSheet("background-color: #27272a; color: #93c5fd; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;")
+            count_pill.setStyleSheet("background-color: #27272a; color: #a5b4fc; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid #3f3f46;")
             item_layout.addWidget(count_pill)
 
             list_item = QListWidgetItem()
-            list_item.setSizeHint(item_widget.sizeHint())
+            list_item.setSizeHint(QSize(0, 56))
             list_item.setData(Qt.ItemDataRole.UserRole, topic_name)
 
             self.topics_list_widget.addItem(list_item)
