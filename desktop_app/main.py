@@ -22,7 +22,10 @@ from typing import Optional
 # Graceful import handling for PyQt6 or PySide6
 try:
     from PyQt6.QtCore import Qt, QSize, QTimer
-    from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QKeySequence, QGuiApplication
+    from PyQt6.QtGui import (
+        QFont, QPixmap, QIcon, QAction, QKeySequence, QGuiApplication,
+        QShortcut, QPainter, QBrush, QColor
+    )
     from PyQt6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QLabel, QLineEdit, QTextEdit, QPushButton, QComboBox, QRadioButton,
@@ -33,7 +36,10 @@ try:
 except ImportError:
     try:
         from PySide6.QtCore import Qt, QSize, QTimer
-        from PySide6.QtGui import QFont, QPixmap, QIcon, QAction, QKeySequence, QGuiApplication
+        from PySide6.QtGui import (
+            QFont, QPixmap, QIcon, QAction, QKeySequence, QGuiApplication,
+            QShortcut, QPainter, QBrush, QColor
+        )
         from PySide6.QtWidgets import (
             QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
             QLabel, QLineEdit, QTextEdit, QPushButton, QComboBox, QRadioButton,
@@ -77,11 +83,102 @@ class MainWindow(QMainWindow):
         self.active_difficulty_filter: str = "All"
         self.attached_image_source_path: Optional[str] = None
         self.existing_relative_image_path: Optional[str] = None
+        self._current_detail_pixmap: Optional[QPixmap] = None
+        self._previous_view_index: int = 0
 
+        self.setWindowIcon(self._create_app_icon())
         self._setup_ui()
+        self._setup_shortcuts()
         self._load_topics_into_combo()
         self.refresh_question_list()
         self.refresh_stats_badges()
+
+    def _create_app_icon(self) -> QIcon:
+        """Generates a crisp modern 64x64 pixmap icon for the application window and taskbar."""
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # Draw rounded dark background badge
+        painter.setBrush(QBrush(QColor("#18181b")))
+        painter.setPen(QColor("#4f46e5"))
+        painter.drawRoundedRect(2, 2, 60, 60, 14, 14)
+
+        # Draw lightning symbol
+        font = QFont("Segoe UI" if sys.platform == "win32" else ".AppleSystemUIFont", 24, QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.setPen(QColor("#60a5fa"))
+        painter.drawText(pixmap.rect(), int(Qt.AlignmentFlag.AlignCenter), "⚡")
+        painter.end()
+
+        return QIcon(pixmap)
+
+    def _setup_shortcuts(self):
+        """Binds cross-platform keyboard shortcuts (translates to Cmd on macOS, Ctrl on Windows)."""
+        # Ctrl/Cmd+N -> New Question
+        self.sc_new = QShortcut(QKeySequence.StandardKey.New, self)
+        self.sc_new.activated.connect(self.open_add_form)
+
+        # Ctrl/Cmd+F -> Focus Search
+        self.sc_find = QShortcut(QKeySequence.StandardKey.Find, self)
+        self.sc_find.activated.connect(self._focus_search)
+
+        # Ctrl/Cmd+S -> Save in Form
+        self.sc_save = QShortcut(QKeySequence.StandardKey.Save, self)
+        self.sc_save.activated.connect(self._on_shortcut_save)
+
+        # Ctrl/Cmd+1 -> All Questions Dashboard
+        self.sc_view1 = QShortcut(QKeySequence("Ctrl+1"), self)
+        self.sc_view1.activated.connect(lambda: self.switch_view(0))
+
+        # Ctrl/Cmd+2 -> Categories & Topics
+        self.sc_view2 = QShortcut(QKeySequence("Ctrl+2"), self)
+        self.sc_view2.activated.connect(lambda: self.switch_view(2))
+
+        # Escape -> Context-sensitive back or clear search
+        self.sc_esc = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        self.sc_esc.activated.connect(self._on_escape)
+
+    def _focus_search(self):
+        """Switches to dashboard and focuses search input."""
+        self.switch_view(0)
+        self.search_input.setFocus()
+        self.search_input.selectAll()
+
+    def _on_shortcut_save(self):
+        """Triggers form save when in form view."""
+        if self.stack.currentIndex() == 1:
+            self._save_question_form()
+
+    def _on_escape(self):
+        """Context-sensitive Escape action."""
+        if self.stack.currentIndex() == 1:
+            self._cancel_form()
+        elif self.stack.currentIndex() == 2:
+            self.switch_view(0)
+        else:
+            if self.search_input.text():
+                self.search_input.clear()
+
+    def _cancel_form(self):
+        """Cancels form editing and returns to previous view."""
+        self.switch_view(self._previous_view_index)
+
+    def _rescale_detail_image(self):
+        """Smoothly adapts attached diagram preview to available detail panel width."""
+        if hasattr(self, "_current_detail_pixmap") and self._current_detail_pixmap and not self._current_detail_pixmap.isNull():
+            avail_w = max(240, self.detail_panel.width() - 80)
+            scaled = self._current_detail_pixmap.scaled(
+                avail_w, 420,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            self.detail_image_label.setPixmap(scaled)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._rescale_detail_image()
 
     def _setup_ui(self):
         """Constructs the master layout: Sidebar on the left, Stacked Central area on right."""
@@ -194,7 +291,8 @@ class MainWindow(QMainWindow):
         top_bar.setSpacing(10)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("🔍  Search questions by title, problem, tag, or notes...")
+        self.search_input.setPlaceholderText("🔍  Search questions by title, problem, tag, or notes... (Ctrl+F)")
+        self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self.refresh_question_list)
         top_bar.addWidget(self.search_input, 3)
 
@@ -212,9 +310,11 @@ class MainWindow(QMainWindow):
 
         # Splitter: Left Question List & Right Read-Only Detail View Panel
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
 
         # Left: Questions List Card Column
         left_container = QWidget()
+        left_container.setMinimumWidth(280)
         left_layout = QVBoxLayout(left_container)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
@@ -231,7 +331,9 @@ class MainWindow(QMainWindow):
 
         # Right: Read-Only Detail View Panel
         self.detail_panel = self._create_detail_panel()
+        self.detail_panel.setMinimumWidth(420)
         self.splitter.addWidget(self.detail_panel)
+        self.splitter.splitterMoved.connect(lambda pos, idx: self._rescale_detail_image())
 
         # Set splitter balance: 35% list, 65% reader
         self.splitter.setSizes([380, 720])
@@ -363,9 +465,9 @@ class MainWindow(QMainWindow):
     # VIEW 2: "ADD / EDIT QUESTION" FORM PANEL
     # =========================================================================
     def _create_form_view(self) -> QWidget:
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("QScrollArea { border: none; background-color: #121316; }")
+        self.form_scroll_area = QScrollArea()
+        self.form_scroll_area.setWidgetResizable(True)
+        self.form_scroll_area.setStyleSheet("QScrollArea { border: none; background-color: #121316; }")
 
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -482,20 +584,20 @@ class MainWindow(QMainWindow):
         action_row = QHBoxLayout()
         action_row.addStretch()
 
-        self.btn_cancel_form = QPushButton("Cancel")
+        self.btn_cancel_form = QPushButton("Cancel (Esc)")
         self.btn_cancel_form.setProperty("class", "secondary-btn")
-        self.btn_cancel_form.clicked.connect(lambda: self.switch_view(0))
+        self.btn_cancel_form.clicked.connect(self._cancel_form)
         action_row.addWidget(self.btn_cancel_form)
 
-        self.btn_save_form = QPushButton("Save Question")
+        self.btn_save_form = QPushButton("💾 Save Question (Ctrl+S)")
         self.btn_save_form.setProperty("class", "primary-btn")
         self.btn_save_form.clicked.connect(self._save_question_form)
         action_row.addWidget(self.btn_save_form)
 
         layout.addLayout(action_row)
 
-        scroll_area.setWidget(panel)
-        return scroll_area
+        self.form_scroll_area.setWidget(panel)
+        return self.form_scroll_area
 
     # =========================================================================
     # VIEW 3: CATEGORIES & TOPICS BROWSER
@@ -525,6 +627,8 @@ class MainWindow(QMainWindow):
     # =========================================================================
     def switch_view(self, index: int):
         """Switches the active stacked widget view and updates sidebar button styles."""
+        if self.stack.currentIndex() != index:
+            self._previous_view_index = self.stack.currentIndex()
         self.stack.setCurrentIndex(index)
         self.btn_nav_all.setChecked(index == 0)
         self.btn_nav_topics.setChecked(index == 2)
@@ -617,13 +721,19 @@ class MainWindow(QMainWindow):
         if self.question_list_widget.count() > 0:
             self.question_list_widget.setCurrentRow(0)
         else:
+            self._current_detail_pixmap = None
             self.detail_content_widget.setVisible(False)
+            if search_query.strip():
+                self.empty_detail_label.setText(f"No questions match '{search_query}'.\nPress Esc or click the clear button to reset search.")
+            else:
+                self.empty_detail_label.setText("No questions found in this filter.\nClick '+ New' to create one.")
             self.empty_detail_label.setVisible(True)
 
     def _on_question_selected(self):
         """Triggered when an item in the left list is selected."""
         selected_items = self.question_list_widget.selectedItems()
         if not selected_items:
+            self._current_detail_pixmap = None
             self.detail_content_widget.setVisible(False)
             self.empty_detail_label.setVisible(True)
             return
@@ -659,15 +769,11 @@ class MainWindow(QMainWindow):
         img_path = resolve_asset_path(q["image_path"])
         if img_path and os.path.exists(img_path):
             self.image_container.setVisible(True)
-            pixmap = QPixmap(img_path)
-            if not pixmap.isNull():
-                scaled = pixmap.scaled(600, 360, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self.detail_image_label.setPixmap(scaled)
-                self.detail_image_path_label.setText(f"File: {os.path.basename(img_path)}")
-            else:
-                self.detail_image_label.setText("Unable to load image preview.")
-                self.detail_image_path_label.setText(os.path.basename(img_path))
+            self._current_detail_pixmap = QPixmap(img_path)
+            self.detail_image_path_label.setText(f"File: {os.path.basename(img_path)}")
+            self._rescale_detail_image()
         else:
+            self._current_detail_pixmap = None
             self.image_container.setVisible(False)
 
     def _copy_code_to_clipboard(self):
@@ -698,6 +804,9 @@ class MainWindow(QMainWindow):
         self.input_code.clear()
         self._clear_attached_image()
         self.switch_view(1)
+        if hasattr(self, "form_scroll_area"):
+            self.form_scroll_area.verticalScrollBar().setValue(0)
+        self.input_title.setFocus()
 
     def _edit_current_question(self):
         """Loads selected question into the form for editing."""
@@ -749,6 +858,9 @@ class MainWindow(QMainWindow):
             self._clear_attached_image()
 
         self.switch_view(1)
+        if hasattr(self, "form_scroll_area"):
+            self.form_scroll_area.verticalScrollBar().setValue(0)
+        self.input_title.setFocus()
 
     def _delete_current_question(self):
         """Deletes selected question after confirmation."""
@@ -913,13 +1025,51 @@ class MainWindow(QMainWindow):
 
 
 def main():
-    """Application entry point."""
+    """Application entry point with High-DPI scaling and platform typography."""
     # 1. Initialize SQLite schema & pre-seed default samples if database is brand new
     init_db()
     seed_sample_data()
 
-    # 2. Launch GUI Application
+    # 2. Configure High-DPI support prior to QApplication instantiation
+    if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling"):
+        try:
+            QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
+        except Exception:
+            pass
+    if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
+        try:
+            QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+        except Exception:
+            pass
+
+    # 3. Launch GUI Application
     app = QApplication(sys.argv)
+    app.setApplicationName("DSANoteTaker")
+    app.setOrganizationName("DSANoteTaker")
+    app.setApplicationDisplayName("DSA Note Taker")
+
+    # High-DPI rounding policy if supported
+    if hasattr(QGuiApplication, "setHighDpiScaleFactorRoundingPolicy"):
+        try:
+            QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+                Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+            )
+        except Exception:
+            pass
+
+    # Platform-tailored typography
+    app_font = app.font()
+    if sys.platform == "darwin":
+        app_font.setFamilies([".AppleSystemUIFont", "SF Pro Text", "Helvetica Neue", "Helvetica", "sans-serif"])
+        app_font.setPointSize(12)
+    elif sys.platform == "win32":
+        app_font.setFamilies(["Segoe UI", "Arial", "sans-serif"])
+        app_font.setPointSize(10)
+    else:
+        app_font.setFamilies(["Ubuntu", "DejaVu Sans", "sans-serif"])
+        app_font.setPointSize(10)
+    app.setFont(app_font)
+
     app.setStyle("Fusion")
     app.setStyleSheet(DARK_STYLESHEET)
 

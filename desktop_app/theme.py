@@ -8,7 +8,6 @@ DARK_STYLESHEET = """
 QWidget {
     background-color: #09090b;
     color: #e4e4e7;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 13px;
     selection-background-color: #4f46e5;
     selection-color: #ffffff;
@@ -140,6 +139,12 @@ QLineEdit, QTextEdit, QPlainTextEdit {
     selection-background-color: #4f46e5;
 }
 
+QLineEdit::clear-button {
+    width: 18px;
+    height: 18px;
+    padding-right: 4px;
+}
+
 QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
     border: 1px solid #4f46e5;
     background-color: #18181b;
@@ -151,7 +156,7 @@ QTextEdit#codeEditor, QPlainTextEdit#codeEditor, QTextEdit#readOnlyCodeViewer {
     color: #a5b4fc;
     border: 1px solid #27272a;
     border-radius: 6px;
-    font-family: "Cascadia Code", "Fira Code", "Courier New", Courier, monospace;
+    font-family: "SF Mono", "Menlo", "Cascadia Code", "Consolas", "Courier New", monospace;
     font-size: 13px;
     line-height: 1.5;
 }
